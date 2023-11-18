@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: "Ingestion Pipeline Bucket and Queues for curated json"
+
+Parameters:
+
+  Prefix:
+    Type: String
+    Description: "Resource name prefix used to help ensure resource name uniqueness and promote template portability between environments"
+    Default: "ingest"
+
+  CuratedJsonBucketSuffix:
+    Type: String
+    Description: "Name suffix of the S3 destination bucket that will be created to store curated json files"
+    Default: "bckt-curation-json"
+
+Resources:
+
+  CuratedJsonBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${Prefix}-${CuratedJsonBucketSuffix}"
+
+Outputs:
+  CuratedJsonBucketName:
+    Description: "Name of the Incoming CSV Bucket"
+    Value: !Ref CuratedJsonBucket

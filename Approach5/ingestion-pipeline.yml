@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: "This example template shows how to create an ingestion pipeline using Lambda, SQS and S3 Buckets"
+
+Parameters:
+
+  Prefix:
+    Type: String
+    Description: "Resource name prefix used to help ensure resource name uniqueness and promote template portability between environments"
+    Default: "ingest"
+
+Resources:
+
+  # Buckets & Queues
+
+  IncomingJsonBucketStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./nested/bucket-incoming-json.yml
+      Parameters:
+        Prefix: !Ref Prefix
+
+  IncomingCsvBucketStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./nested/bucket-incoming-csv.yml
+      Parameters:
+        Prefix: !Ref Prefix
+
+  CuratedJsonBucketStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./nested/bucket-curated-json.yml
+      Parameters:
+        Prefix: !Ref Prefix
+
+  # Lamdas
+
+  CopyIncomingJsonToCuratedJsonLambdaStack:
+    DependsOn:
+      - IncomingJsonBucketStack
+      - CuratedJsonBucketStack
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./nested/lambda/lambda-copy-incoming-json-to-curated-json.yml
+      Parameters:
+        Prefix: !Ref Prefix
+
+  CopyIncomingCsvToCuratedJsonLambdaStack:
+    DependsOn:
+      - IncomingCsvBucketStack
+      - CuratedJsonBucketStack
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./nested/lambda/lambda-copy-incoming-csv-to-curated-json.yml
+      Parameters:
+        Prefix: !Ref Prefix

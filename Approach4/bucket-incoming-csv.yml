@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: "Ingestion Pipeline Bucket and Queues for incoming csv"
+
+Parameters:
+
+  Prefix:
+    Type: String
+    Description: "Resource name prefix used to help ensure resource name uniqueness and promote template portability between environments"
+    Default: "ingest"
+
+Resources:
+
+  IncomingCsvBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${Prefix}-bckt-incoming-csv"
+      NotificationConfiguration:
+        QueueConfigurations:
+          - Event: s3:ObjectCreated:*
+            Queue: !GetAtt IncomingCsvToCuratedJsonQueue.Arn
+            Filter: 
+              S3Key:
+                Rules:
+                  - Name: suffix
+                    Value: ".csv"
+
+  IncomingCsvToCuratedJsonQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${Prefix}-queue-incoming-csv-to-curated-json"
+      RedrivePolicy:
+        maxReceiveCount: 5
+        deadLetterTargetArn:
+          Fn::GetAtt:
+            - IncomingCsvToCuratedJsonDeadLetterQueue
+            - Arn
+  
+  IncomingCsvToCuratedJsonDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${Prefix}-dlq-incoming-csv-to-curated-csv"
+
+  IncomingCsvToCuratedJsonQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref IncomingCsvToCuratedJsonQueue
+      PolicyDocument:
+        Id: SQSQueuePolicy
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: "sqs:SendMessage"
+            Resource: !GetAtt IncomingCsvToCuratedJsonQueue.Arn
+            Principal:
+              Service: s3.amazonaws.com
+            Condition:
+              ArnLike:
+                aws:SourceArn: !Sub "arn:aws:s3:::${Prefix}-bckt-incoming-csv"
+
+Outputs:
+  IncomingCsvToCuratedJsonQueueArn:
+    Description: "ARN of the SQS Queue between Incoming Csv and Curated Json Buckets"
+    Value: !GetAtt IncomingCsvToCuratedJsonQueue.Arn
+    Export:
+      Name: !Sub "${Prefix}-queue-incoming-csv-to-curated-json-arn"
