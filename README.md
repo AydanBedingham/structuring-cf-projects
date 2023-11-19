@@ -2,7 +2,7 @@
 
 This project explores various approaches to structuring CloudFormation Projects.
 
-The architecturess examined is a simple ingestion pipeline:
+The architectures examined is a simple ingestion pipeline:
 - Defines S3 buckets for Incoming JSON and Incoming CSV files.
 - Each bucket has a respective SQS queue which will receive items in response to files being uploaded to the bucket (s3:ObjectCreated:*).
 - Lambda functions consume items from the SQS queues, process the files and transfer them to a seperate Curated JSON bucket.
